@@ -7,6 +7,7 @@ import toolz
 from altair import datum
 import sqlite3
 
+
 def t(data):
     return toolz.curried.pipe(data, limit_rows(max_rows=300000), to_values)
 
@@ -14,30 +15,30 @@ def t(data):
 alt.data_transformers.register("custom", t)
 alt.data_transformers.enable("custom")
 
-conn = sqlite3.connect('./data.db')
+# conn = sqlite3.connect("./data.db")
 
 @st.experimental_memo(max_entries=10)
 def load_data():
-    
+
     mdcname_list = [
-        '01 神経系疾患',
-        '02 眼科系疾患',
-        '03 耳鼻咽喉科系疾患',
-        '04 呼吸器系疾患',
-        '05 循環器系疾患',
-        '06 消化器系疾患、肝臓・胆道・膵臓疾患',
-        '07 筋骨格系疾患',
-        '08 皮膚・皮下組織の疾患',
-        '09 乳房の疾患',
-        '10 内分泌・栄養・代謝に関する疾患',
-        '11 腎・尿路系疾患及び男性生殖器系疾患',
-        '12 女性生殖器系疾患及び産褥期疾患・異常妊娠分娩',
-        '13 血液・造血器・免疫臓器の疾患',
-        '14 新生児疾患、先天性奇形',
-        '15 小児疾患',
-        '16 外傷・熱傷・中毒',
-        '17 精神疾患',
-        '18 その他'
+        "01 神経系疾患",
+        "02 眼科系疾患",
+        "03 耳鼻咽喉科系疾患",
+        "04 呼吸器系疾患",
+        "05 循環器系疾患",
+        "06 消化器系疾患、肝臓・胆道・膵臓疾患",
+        "07 筋骨格系疾患",
+        "08 皮膚・皮下組織の疾患",
+        "09 乳房の疾患",
+        "10 内分泌・栄養・代謝に関する疾患",
+        "11 腎・尿路系疾患及び男性生殖器系疾患",
+        "12 女性生殖器系疾患及び産褥期疾患・異常妊娠分娩",
+        "13 血液・造血器・免疫臓器の疾患",
+        "14 新生児疾患、先天性奇形",
+        "15 小児疾患",
+        "16 外傷・熱傷・中毒",
+        "17 精神疾患",
+        "18 その他",
     ]
 
     pref_list = [
@@ -89,17 +90,16 @@ def load_data():
         "鹿児島県",
         "沖縄県",
     ]
-    
-    
-    mdc6name_list = pd.read_sql('SELECT * FROM mdc6name', conn)['mdc6name']
-    
-    hp = pd.read_sql('SELECT * FROM hp', conn)
-    hp_list = hp['hpname']
-    hp['hpname'] = pd.Categorical(hp['hpname'], categories=hp_list)
-    hp['pref'] = pd.Categorical(hp['pref'], categories=pref_list)
-    
 
-    return hp, hp_list, pref_list, mdcname_list,mdc6name_list
+    conn = sqlite3.connect("./data.db")
+    mdc6name_list = pd.read_sql("SELECT * FROM mdc6name", conn)["mdc6name"]
+    hp = pd.read_sql("SELECT * FROM hp", conn)
+    conn.close()
+    hp_list = hp["hpname"]
+    hp["hpname"] = pd.Categorical(hp["hpname"], categories=hp_list)
+    hp["pref"] = pd.Categorical(hp["pref"], categories=pref_list)
+
+    return hp, hp_list, pref_list, mdcname_list, mdc6name_list
 
 
 @st.experimental_memo(max_entries=10, ttl=3600)
@@ -122,8 +122,10 @@ def city(hp, select_citys):
 
 @st.experimental_memo(max_entries=10, ttl=3600)
 def extract_mdc2d(hp_list, mdcname_list, selecthpnames):
+    conn = sqlite3.connect("./data.db")
     sql = f"SELECT * FROM mdc2d WHERE hpname IN {tuple(selecthpnames)}"
     mdc2d = pd.read_sql(sql, conn)
+    conn.close()
     mdc2d["hpname"] = pd.Categorical(mdc2d["hpname"], categories=hp_list)
     mdc2d["mdcname"] = pd.Categorical(mdc2d["mdcname"], categories=mdcname_list)
     return mdc2d
@@ -131,8 +133,10 @@ def extract_mdc2d(hp_list, mdcname_list, selecthpnames):
 
 @st.experimental_memo(max_entries=10, ttl=3600)
 def extract_mdc6d(hp_list, mdcname_list, mdc6name_list, selecthpnames):
+    conn = sqlite3.connect("./data.db")
     sql = f"SELECT * FROM mdc6d WHERE hpname IN {tuple(selecthpnames)}"
     mdc6d = pd.read_sql(sql, conn)
+    conn.close()
     mdc6d["hpname"] = pd.Categorical(mdc6d["hpname"], categories=hp_list)
     mdc6d["mdcname"] = pd.Categorical(mdc6d["mdcname"], categories=mdcname_list)
     mdc6d["mdc6name"] = pd.Categorical(mdc6d["mdc6name"], categories=mdc6name_list)
@@ -141,8 +145,10 @@ def extract_mdc6d(hp_list, mdcname_list, mdc6name_list, selecthpnames):
 
 @st.experimental_memo(max_entries=10, ttl=3600)
 def extract_oped(hp_list, mdcname_list, mdc6name_list, selecthpnames):
+    conn = sqlite3.connect("./data.db")
     sql = f"SELECT * FROM oped WHERE hpname IN {tuple(selecthpnames)}"
     oped = pd.read_sql(sql, conn)
+    conn.close()
     oped["hpname"] = pd.Categorical(oped["hpname"], categories=hp_list)
     oped["mdcname"] = pd.Categorical(oped["mdcname"], categories=mdcname_list)
     oped["mdc6name"] = pd.Categorical(oped["mdc6name"], categories=mdc6name_list)
@@ -152,7 +158,7 @@ def extract_oped(hp_list, mdcname_list, mdc6name_list, selecthpnames):
 
 
 def set_location(select_hpname, hp, pref_list):
-    init_pref = ['東京都','埼玉県','神奈川県','千葉県']
+    init_pref = ["東京都"]
     init_med2 = []
     if select_hpname != []:
         init_pref = hp.loc[hp["hpname"].isin(select_hpname)]["pref"].unique()
@@ -182,7 +188,9 @@ def set_location(select_hpname, hp, pref_list):
                 "二次医療圏", list(hp["med2"].unique()), default=list(init_med2)
             )
         else:
-            select_med2s = st.sidebar.multiselect("二次医療圏", list(hp["med2"].unique()))
+            select_med2s = st.sidebar.multiselect(
+                "二次医療圏", list(hp["med2"].unique())
+            )
         if select_med2s != []:
             hp = med2(hp, select_med2s)
 
@@ -200,18 +208,17 @@ def set_location(select_hpname, hp, pref_list):
 
 
 @st.experimental_memo(max_entries=10, ttl=3600)
-def filtering_data(
-    hp,
-    select_hpname,
-    set_min,
-    set_max,
-    hp_list,
-    mdcname_list,
-    mdc6name_list
-):
+def filtering_hp(hp, select_hpname, set_min, set_max):
     hp = hp.loc[hp["bed"].between(set_min, set_max)]
     selecthpnames = set(hp["hpname"])
     selecthpnames = selecthpnames.union(select_hpname)
+    return selecthpnames, hp
+
+
+@st.experimental_memo(max_entries=10, ttl=3600)
+def filtering_data(
+    hp, select_hpname, selecthpnames, hp_list, mdcname_list, mdc6name_list
+):
     mdc2d = extract_mdc2d(hp_list, mdcname_list, selecthpnames)
     mdc6d = extract_mdc6d(hp_list, mdcname_list, mdc6name_list, selecthpnames)
     oped = extract_oped(hp_list, mdcname_list, mdc6name_list, selecthpnames)
@@ -219,9 +226,6 @@ def filtering_data(
     if select_hpname != []:
         oped["hp"] = oped["hp"].mask(oped["hpname"].isin(select_hpname), oped["hpname"])
     return mdc2d, mdc6d, oped, hp
-
-
-
 
 
 @st.experimental_memo(max_entries=10, ttl=3600)
