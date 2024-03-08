@@ -2,8 +2,8 @@ import streamlit as st
 import altair as alt
 from altair import limit_rows, to_values
 import toolz
+
 from package import myfunc
-import sqlite3
 
 
 def t(data):
@@ -15,28 +15,40 @@ st.set_page_config(layout="wide")
 alt.data_transformers.register("custom", t)
 alt.data_transformers.enable("custom")
 
-hp, hp_list, pref_list, mdcname_list, mdc6name_list = myfunc.load_data()
+# get mst
+region_list, pref_list, hp, hp_list, mdcname_list, mdc6name_list = myfunc.get_mst()
 
+# sidebar
 st.sidebar.markdown("## 2021年度DPC調査")
 st.sidebar.markdown("### ")
 
-select_hpname = st.sidebar.multiselect("医療機関名", hp_list)
+# regionのセレクトボックス
+# select_region = st.sidebar.multiselect("地方", region_list)
+select_region = st.sidebar.selectbox("地方", region_list, index=2)
 
-select_prefs, select_med2s, select_citys, hp = myfunc.set_location(
-    select_hpname, hp, pref_list
+# select_region = st.sidebar.multiselect("地方", region_list, default="関東地方")
+
+hp = myfunc.filter_region(hp, select_region)
+
+# sidebarの地区
+select_prefs, select_med2s, select_citys, select_hpname, hp = myfunc.set_location(
+    hp, pref_list
 )
-
+# sidebarの病床数を取得
 set_min, set_max = st.sidebar.slider("病床数", value=(0, 1400), step=50)
 
-selecthpnames, hp = myfunc.filtering_hp(hp, select_hpname , set_min, set_max)
+# 最後にbedでフィルタリングしてからselect_hpcdを取得
+select_hpcd = myfunc.get_select_hpcd(hp, select_hpname, set_min, set_max)
 
-mdc2d, mdc6d, oped, hp = myfunc.filtering_data(
-    hp, select_hpname, selecthpnames, hp_list, mdcname_list, mdc6name_list
+# data取得
+mdc2d, mdc6d, oped = myfunc.get_value_data(
+    select_hpcd, select_hpname, hp_list, mdcname_list, mdc6name_list
 )
 
-charts = myfunc.draw_chart(select_hpname, mdc2d, mdc6d, oped, hp)
+charts = myfunc.draw_chart(select_hpname, mdc2d, mdc6d, oped)
 
 st.altair_chart(charts)
+
 
 # フッター　###################################################################################
 link1 = "https://www.mhlw.go.jp/stf/shingi2/0000196043_00005.html"

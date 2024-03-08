@@ -4,7 +4,6 @@ import streamlit as st
 import altair as alt
 from altair import limit_rows, to_values
 import toolz
-from altair import datum
 import sqlite3
 
 
@@ -15,91 +14,35 @@ def t(data):
 alt.data_transformers.register("custom", t)
 alt.data_transformers.enable("custom")
 
-# conn = sqlite3.connect("./data.db")
+conn = sqlite3.connect("./data.db")
+
 
 @st.experimental_memo(max_entries=10)
-def load_data():
-
-    mdcname_list = [
-        "01 神経系疾患",
-        "02 眼科系疾患",
-        "03 耳鼻咽喉科系疾患",
-        "04 呼吸器系疾患",
-        "05 循環器系疾患",
-        "06 消化器系疾患、肝臓・胆道・膵臓疾患",
-        "07 筋骨格系疾患",
-        "08 皮膚・皮下組織の疾患",
-        "09 乳房の疾患",
-        "10 内分泌・栄養・代謝に関する疾患",
-        "11 腎・尿路系疾患及び男性生殖器系疾患",
-        "12 女性生殖器系疾患及び産褥期疾患・異常妊娠分娩",
-        "13 血液・造血器・免疫臓器の疾患",
-        "14 新生児疾患、先天性奇形",
-        "15 小児疾患",
-        "16 外傷・熱傷・中毒",
-        "17 精神疾患",
-        "18 その他",
-    ]
-
-    pref_list = [
-        "北海道",
-        "青森県",
-        "岩手県",
-        "宮城県",
-        "秋田県",
-        "山形県",
-        "福島県",
-        "茨城県",
-        "栃木県",
-        "群馬県",
-        "埼玉県",
-        "千葉県",
-        "東京都",
-        "神奈川県",
-        "新潟県",
-        "富山県",
-        "石川県",
-        "福井県",
-        "山梨県",
-        "長野県",
-        "岐阜県",
-        "静岡県",
-        "愛知県",
-        "三重県",
-        "滋賀県",
-        "京都府",
-        "大阪府",
-        "兵庫県",
-        "奈良県",
-        "和歌山県",
-        "鳥取県",
-        "島根県",
-        "岡山県",
-        "広島県",
-        "山口県",
-        "徳島県",
-        "香川県",
-        "愛媛県",
-        "高知県",
-        "福岡県",
-        "佐賀県",
-        "長崎県",
-        "熊本県",
-        "大分県",
-        "宮崎県",
-        "鹿児島県",
-        "沖縄県",
-    ]
-
+def get_mst():
     conn = sqlite3.connect("./data.db")
-    mdc6name_list = pd.read_sql("SELECT * FROM mdc6name", conn)["mdc6name"]
-    hp = pd.read_sql("SELECT * FROM hp", conn)
-    conn.close()
+    region_list = pd.read_sql("SELECT region FROM region", conn)["region"]
+    pref_list = pd.read_sql("SELECT pref FROM prefecture", conn)["pref"]
+    sql = """
+    SELECT
+        hpcd
+        ,hpname
+        ,region
+        ,pref
+        ,med2
+        ,city
+        ,bed
+    FROM hp
+    LEFT JOIN prefecture ON hp.pref_id = prefecture.pref_id
+    LEFT JOIN region ON prefecture.region_id = region.region_id;
+    """
+    hp = pd.read_sql(sql, conn)
     hp_list = hp["hpname"]
-    hp["hpname"] = pd.Categorical(hp["hpname"], categories=hp_list)
-    hp["pref"] = pd.Categorical(hp["pref"], categories=pref_list)
-
-    return hp, hp_list, pref_list, mdcname_list, mdc6name_list
+    mdcname_list = pd.read_sql("SELECT mdcname FROM mdc2_mst", conn)["mdcname"]
+    mdc6name_list = pd.read_sql("SELECT DISTINCT mdc6name FROM mdc26_mst", conn)[
+        "mdc6name"
+    ]
+    conn.close()
+    return region_list, pref_list, hp, hp_list, mdcname_list, mdc6name_list
 
 
 @st.experimental_memo(max_entries=10, ttl=3600)
@@ -121,48 +64,19 @@ def city(hp, select_citys):
 
 
 @st.experimental_memo(max_entries=10, ttl=3600)
-def extract_mdc2d(hp_list, mdcname_list, selecthpnames):
-    conn = sqlite3.connect("./data.db")
-    sql = f"SELECT * FROM mdc2d WHERE hpname IN {tuple(selecthpnames)}"
-    mdc2d = pd.read_sql(sql, conn)
-    conn.close()
-    mdc2d["hpname"] = pd.Categorical(mdc2d["hpname"], categories=hp_list)
-    mdc2d["mdcname"] = pd.Categorical(mdc2d["mdcname"], categories=mdcname_list)
-    return mdc2d
+def filter_region(hp, select_region):
+    return hp.loc[hp["region"] == select_region]
 
 
-@st.experimental_memo(max_entries=10, ttl=3600)
-def extract_mdc6d(hp_list, mdcname_list, mdc6name_list, selecthpnames):
-    conn = sqlite3.connect("./data.db")
-    sql = f"SELECT * FROM mdc6d WHERE hpname IN {tuple(selecthpnames)}"
-    mdc6d = pd.read_sql(sql, conn)
-    conn.close()
-    mdc6d["hpname"] = pd.Categorical(mdc6d["hpname"], categories=hp_list)
-    mdc6d["mdcname"] = pd.Categorical(mdc6d["mdcname"], categories=mdcname_list)
-    mdc6d["mdc6name"] = pd.Categorical(mdc6d["mdc6name"], categories=mdc6name_list)
-    return mdc6d
-
-
-@st.experimental_memo(max_entries=10, ttl=3600)
-def extract_oped(hp_list, mdcname_list, mdc6name_list, selecthpnames):
-    conn = sqlite3.connect("./data.db")
-    sql = f"SELECT * FROM oped WHERE hpname IN {tuple(selecthpnames)}"
-    oped = pd.read_sql(sql, conn)
-    conn.close()
-    oped["hpname"] = pd.Categorical(oped["hpname"], categories=hp_list)
-    oped["mdcname"] = pd.Categorical(oped["mdcname"], categories=mdcname_list)
-    oped["mdc6name"] = pd.Categorical(oped["mdc6name"], categories=mdc6name_list)
-    # hpという列を作成。中身はすべて空文字。後でselect_hpnameのグラフ化で使う
-    oped["hp"] = " "
-    return oped
-
-
-def set_location(select_hpname, hp, pref_list):
-    init_pref = ["東京都"]
+def set_location(hp, pref_list):
+    hp_list = hp["hpname"].unique()
+    select_hpname = st.sidebar.multiselect("医療機関名", hp_list)
+    init_pref = []
     init_med2 = []
     if select_hpname != []:
-        init_pref = hp.loc[hp["hpname"].isin(select_hpname)]["pref"].unique()
-        init_med2 = hp.loc[hp["hpname"].isin(select_hpname)]["med2"].unique()
+        tmp = hp.loc[hp["hpname"].isin(select_hpname)]
+        init_pref = tmp["pref"].unique()
+        init_med2 = tmp["med2"].unique()
     ###############################################################
     try:
         select_prefs = st.sidebar.multiselect(
@@ -204,32 +118,99 @@ def set_location(select_hpname, hp, pref_list):
     if select_citys != []:
         hp = city(hp, select_citys)
 
-    return select_prefs, select_med2s, select_citys, hp
+    return select_prefs, select_med2s, select_citys, select_hpname, hp
 
 
 @st.experimental_memo(max_entries=10, ttl=3600)
-def filtering_hp(hp, select_hpname, set_min, set_max):
+def get_select_hpcd(hp, select_hpname, set_min, set_max):
     hp = hp.loc[hp["bed"].between(set_min, set_max)]
-    selecthpnames = set(hp["hpname"])
-    selecthpnames = selecthpnames.union(select_hpname)
-    return selecthpnames, hp
+    selecthpnames = set(hp["hpname"]).union(select_hpname)
+    select_hpcd = hp.loc[hp["hpname"].isin(selecthpnames)]["hpcd"]
+    return select_hpcd
 
 
 @st.experimental_memo(max_entries=10, ttl=3600)
-def filtering_data(
-    hp, select_hpname, selecthpnames, hp_list, mdcname_list, mdc6name_list
-):
-    mdc2d = extract_mdc2d(hp_list, mdcname_list, selecthpnames)
-    mdc6d = extract_mdc6d(hp_list, mdcname_list, mdc6name_list, selecthpnames)
-    oped = extract_oped(hp_list, mdcname_list, mdc6name_list, selecthpnames)
+def get_value_data(select_hpcd, select_hpname, hp_list, mdcname_list, mdc6name_list):
+    conn = sqlite3.connect("./data.db")
+    # mdc2dの取得
+    sql = f"""
+    SELECT
+        hpname
+        ,mdcname
+        ,value
+    FROM mdc2d
+    INNER JOIN hp 
+        ON mdc2d.hpcd = hp.hpcd
+        AND hp.hpcd in {tuple(select_hpcd)}
+    INNER JOIN mdc2_mst ON mdc2d.mdc2 = mdc2_mst.mdc2
+    """
+    mdc2d = pd.read_sql(sql, conn)
+    mdc2d["hpname"] = pd.Categorical(mdc2d["hpname"], categories=hp_list)
+    mdc2d["mdcname"] = pd.Categorical(mdc2d["mdcname"], categories=mdcname_list)
+    # mdc6dの取得
+    sql = f"""
+    SELECT
+        hpname
+        ,mdcname
+        ,mdc6name
+        ,value
+    FROM mdc6d
+    INNER JOIN hp 
+        ON mdc6d.hpcd = hp.hpcd
+        AND hp.hpcd in {tuple(select_hpcd)}
+    INNER JOIN mdc26_mst ON mdc6d.mdc6 = mdc26_mst.mdc6
+    INNER JOIN mdc2_mst ON mdc26_mst.mdc2 = mdc2_mst.mdc2
+    ;
+    """
+    mdc6d = pd.read_sql(sql, conn)
+    mdc6d["hpname"] = pd.Categorical(mdc6d["hpname"], categories=hp_list)
+    mdc6d["mdcname"] = pd.Categorical(mdc6d["mdcname"], categories=mdcname_list)
+    mdc6d["mdc6name"] = pd.Categorical(mdc6d["mdc6name"], categories=mdc6name_list)
+    # opedの取得
+    sql = f"""
+    WITH mdc_mst as  (
+        SELECT
+            mdc2_mst.mdc2
+            ,mdc2_mst.mdcname
+            ,mdc26_mst.mdc6
+            ,mdc26_mst.mdc6name
+        FROM mdc2_mst
+        INNER JOIN mdc26_mst ON mdc2_mst.mdc2 = mdc26_mst.mdc2
+    )
+    SELECT
+        oped.hpcd
+        ,hp.hpname
+        ,mdc_mst.mdcname
+        ,oped.mdc6
+        ,mdc_mst.mdc6name
+        ,oped.ope
+        ,ope_mst.opename
+        ,oped.value
+        ,hp.bed
+    FROM oped
+    INNER JOIN hp 
+        ON oped.hpcd = hp.hpcd
+        AND hp.hpcd in {tuple(select_hpcd)}
+    INNER JOIN mdc_mst ON oped.mdc6 = mdc_mst.mdc6
+    INNER JOIN ope_mst ON oped.mdc6 = ope_mst.mdc6 and oped.ope = ope_mst.ope;
+    
+    """
+    oped = pd.read_sql(sql, conn)
+    oped["hpname"] = pd.Categorical(oped["hpname"], categories=hp_list)
+    oped["mdcname"] = pd.Categorical(oped["mdcname"], categories=mdcname_list)
+    oped["mdc6name"] = pd.Categorical(oped["mdc6name"], categories=mdc6name_list)
+    oped["hp"] = " "
+    conn.close()
+
     # 散布図のshape用の処理
     if select_hpname != []:
         oped["hp"] = oped["hp"].mask(oped["hpname"].isin(select_hpname), oped["hpname"])
-    return mdc2d, mdc6d, oped, hp
+
+    return mdc2d, mdc6d, oped
 
 
 @st.experimental_memo(max_entries=10, ttl=3600)
-def draw_chart(select_hpname, mdc2d, mdc6d, oped, hp):
+def draw_chart(select_hpname, mdc2d, mdc6d, oped):
     ##################################################################
     top_hight = 370
     top_width = 490
