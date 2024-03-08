@@ -16,23 +16,21 @@ alt.data_transformers.register("custom", t)
 alt.data_transformers.enable("custom")
 
 # get mst
-region_list, pref_list, hp, hp_list, mdcname_list, mdc6name_list = myfunc.get_mst()
+region_list, mdcname_list, mdc6name_list = myfunc.get_mst()
 
 # sidebar
 st.sidebar.markdown("## 2021年度DPC調査")
 st.sidebar.markdown("### ")
 
 # regionのセレクトボックス
-# select_region = st.sidebar.multiselect("地方", region_list)
 select_region = st.sidebar.selectbox("地方", region_list, index=2)
 
-# select_region = st.sidebar.multiselect("地方", region_list, default="関東地方")
+# regionのデータを取得
+pref_list, hp_list, hp = myfunc.get_region_data(select_region)
 
-hp = myfunc.filter_region(hp, select_region)
-
-# sidebarの地区
+# sidebarの処理
 select_prefs, select_med2s, select_citys, select_hpname, hp = myfunc.set_location(
-    hp, pref_list
+    pref_list, hp_list, hp
 )
 # sidebarの病床数を取得
 set_min, set_max = st.sidebar.slider("病床数", value=(0, 1400), step=50)

@@ -21,28 +21,12 @@ conn = sqlite3.connect("./data.db")
 def get_mst():
     conn = sqlite3.connect("./data.db")
     region_list = pd.read_sql("SELECT region FROM region", conn)["region"]
-    pref_list = pd.read_sql("SELECT pref FROM prefecture", conn)["pref"]
-    sql = """
-    SELECT
-        hpcd
-        ,hpname
-        ,region
-        ,pref
-        ,med2
-        ,city
-        ,bed
-    FROM hp
-    LEFT JOIN prefecture ON hp.pref_id = prefecture.pref_id
-    LEFT JOIN region ON prefecture.region_id = region.region_id;
-    """
-    hp = pd.read_sql(sql, conn)
-    hp_list = hp["hpname"]
     mdcname_list = pd.read_sql("SELECT mdcname FROM mdc2_mst", conn)["mdcname"]
     mdc6name_list = pd.read_sql("SELECT DISTINCT mdc6name FROM mdc26_mst", conn)[
         "mdc6name"
     ]
     conn.close()
-    return region_list, pref_list, hp, hp_list, mdcname_list, mdc6name_list
+    return region_list, mdcname_list, mdc6name_list
 
 
 @st.experimental_memo(max_entries=10, ttl=3600)
@@ -64,12 +48,37 @@ def city(hp, select_citys):
 
 
 @st.experimental_memo(max_entries=10, ttl=3600)
-def filter_region(hp, select_region):
-    return hp.loc[hp["region"] == select_region]
+def get_region_data(select_region):
+    conn = sqlite3.connect("./data.db")
+    # sqlでregion_idを取得
+    region_id = conn.execute(
+        f'SELECT region_id FROM region WHERE region = "{select_region}"'
+    ).fetchone()[0]
+
+    pref_list = pd.read_sql(
+        f"SELECT pref FROM prefecture WHERE region_id = '{region_id}'", conn
+    )["pref"]
+
+    sql = f"""
+    SELECT
+        hpcd
+        ,hpname
+        ,pref
+        ,med2
+        ,city
+        ,bed
+    FROM hp
+    LEFT JOIN prefecture ON hp.pref_id = prefecture.pref_id
+    WHERE hp.region_id = '{region_id}';
+    """
+    hp = pd.read_sql(sql, conn)
+    hp_list = hp["hpname"]
+    conn.close()
+
+    return pref_list, hp_list, hp
 
 
-def set_location(hp, pref_list):
-    hp_list = hp["hpname"].unique()
+def set_location(pref_list, hp_list, hp):
     select_hpname = st.sidebar.multiselect("医療機関名", hp_list)
     init_pref = []
     init_med2 = []
