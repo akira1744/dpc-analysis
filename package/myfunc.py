@@ -427,7 +427,7 @@ def draw_chart(select_hpname, mdc2d, mdc6d, oped):
         )
         .transform_filter((alt.datum.opename != "0 差分"))
         .transform_window(
-            ope_rank="dense_rank(ope_value:Q)",
+            ope_rank="dense_rank(ope_value)",
             sort=[alt.SortField("ope_value", order="descending")],
         )
         .transform_filter(alt.datum.ope_rank < 20)
