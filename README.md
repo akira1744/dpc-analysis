@@ -1,6 +1,6 @@
 # DPC導入の影響評価に係る調査「退院患者調査」の可視化WEBアプリ
 
-https://dpc-analysis-2021.streamlit.app/
+https://dpc-analysis.streamlit.app/
 
 ![demo](./dpc-analysis-2021-demo.gif)
 
