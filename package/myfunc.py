@@ -398,7 +398,7 @@ def draw_chart(select_hpname, mdc2d, mdc6d, oped):
             )
         )
         .transform_window(
-            mdc6_rank="dense_rank(mdc6_value:Q)",
+            mdc6_rank="dense_rank()",
             sort=[alt.SortField("mdc6_value", order="descending")],
         )
         .transform_filter(alt.datum.mdc6_rank < 20)
