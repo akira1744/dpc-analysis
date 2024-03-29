@@ -291,7 +291,7 @@ def draw_chart(select_hpname, mdc2d, mdc6d, oped):
             alt.Tooltip("mdcname", title="MDC2"),
             alt.Tooltip("sum(value)", title="件数", format=","),
         ],
-    ).properties(width=top_width, height=top_hight, title="病院別・疾患別実績")
+    ).properties(width=top_width, height=top_hight, title="病院別・疾患別 月平均実績")
 
     hp_text = oped_base3.encode(
         x=alt.X("sum(value)", title=None),
@@ -320,7 +320,7 @@ def draw_chart(select_hpname, mdc2d, mdc6d, oped):
                 alt.Tooltip("sum(value):Q", title="件数", format=","),
             ],
         )
-        .properties(width=top_width, height=top_hight, title="病床数別・疾患別実績")
+        .properties(width=top_width, height=top_hight, title="病床数別・疾患別 月平均実績")
         .add_selection(mdc_selection)
     )
 
