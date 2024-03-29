@@ -19,7 +19,7 @@ alt.data_transformers.enable("custom")
 region_list, mdcname_list, mdc6name_list = myfunc.get_mst()
 
 # sidebar
-st.sidebar.markdown("## 2021年度DPC調査")
+st.sidebar.markdown("## 2022年度DPC調査")
 st.sidebar.markdown("### ")
 
 # regionのセレクトボックス
@@ -49,13 +49,13 @@ st.altair_chart(charts)
 
 
 # フッター　###################################################################################
-link1 = "https://www.mhlw.go.jp/stf/shingi2/0000196043_00006.html"
+link1 = "https://www.mhlw.go.jp/stf/shingi2/newpage_39119.html"
 link2 = "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000198757_00003.html"
 
 my_expander = st.expander("DataSource")
 with my_expander:
     st.markdown(
-        "[1.令和3年度DPC導入の影響評価に係る調査「退院患者調査」の結果報告について]({})".format(
+        "[1.令和4年度DPC導入の影響評価に係る調査「退院患者調査」の結果報告について]({})".format(
             link1
         )
     )
