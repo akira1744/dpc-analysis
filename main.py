@@ -50,7 +50,8 @@ st.altair_chart(charts)
 
 # フッター　###################################################################################
 link1 = "https://www.mhlw.go.jp/stf/shingi2/newpage_39119.html"
-link2 = "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000198757_00003.html"
+link2 = "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000198757_00004.html"
+
 
 my_expander = st.expander("DataSource")
 with my_expander:
