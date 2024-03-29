@@ -60,7 +60,7 @@ with my_expander:
         )
     )
     st.markdown(
-        "[2.診断群分類（DPC) 電子点数表（令和3年11月24日更新）]({}) ".format(link2)
+        "[2.診断群分類（DPC）電子点数表（正式版）（令和5年12月19日更新）]({}) ".format(link2)
     )
 
 my_expander = st.expander("Q & A")
