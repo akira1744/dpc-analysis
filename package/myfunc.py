@@ -184,7 +184,7 @@ def get_value_data(select_hpcd, select_hpname, hp_list, mdcname_list, mdc6name_l
             ,mdc26_mst.mdc6
             ,mdc26_mst.mdc6name
         FROM mdc2_mst
-        INNER JOIN mdc26_mst ON mdc2_mst.mdc2 = mdc26_mst.mdc2
+        LEFT JOIN mdc26_mst ON mdc2_mst.mdc2 = mdc26_mst.mdc2
     )
     SELECT
         oped.hpcd
@@ -193,15 +193,15 @@ def get_value_data(select_hpcd, select_hpname, hp_list, mdcname_list, mdc6name_l
         ,oped.mdc6
         ,mdc_mst.mdc6name
         ,oped.ope
-        ,ope_mst.opename
+        ,coalesce(ope_mst.opename,"0 差分") as opename
         ,oped.value
         ,hp.bed
     FROM oped
     INNER JOIN hp 
         ON oped.hpcd = hp.hpcd
         AND hp.hpcd in {tuple(select_hpcd)}
-    INNER JOIN mdc_mst ON oped.mdc6 = mdc_mst.mdc6
-    INNER JOIN ope_mst ON oped.mdc6 = ope_mst.mdc6 and oped.ope = ope_mst.ope;
+    LEFT JOIN mdc_mst ON oped.mdc6 = mdc_mst.mdc6
+    LEFT JOIN ope_mst ON oped.mdc6 = ope_mst.mdc6 and oped.ope = ope_mst.ope;
     
     """
     oped = pd.read_sql(sql, conn)
@@ -266,10 +266,13 @@ def draw_chart(select_hpname, mdc2d, mdc6d, oped):
         alt.Color("mdcname:N", title="MDC2", scale=alt.Scale(scheme=color_scheme)),
         alt.value("lightgray"),
     )
+    ####################################################################
+    # print(oped.dtypes)
     ######################################################################
     oped_base1 = (
         alt.Chart(oped).transform_filter(mdc_selection).transform_filter(mdc6_selection)
     )
+    # print(oped_base1.dtypes)
     oped_base2 = oped_base1.transform_filter(ope_selection)
     #######################################################################
     oped_base3 = (
@@ -320,7 +323,9 @@ def draw_chart(select_hpname, mdc2d, mdc6d, oped):
                 alt.Tooltip("sum(value):Q", title="件数", format=","),
             ],
         )
-        .properties(width=top_width, height=top_hight, title="病床数別・疾患別 月平均実績")
+        .properties(
+            width=top_width, height=top_hight, title="病床数別・疾患別 月平均実績"
+        )
         .add_selection(mdc_selection)
     )
 
@@ -421,6 +426,26 @@ def draw_chart(select_hpname, mdc2d, mdc6d, oped):
         align="left", baseline="middle", dx=3
     ).add_selection(mdc6_selection)
     ###################################################################
+    # 2024/3/23 変更
+    # 本番環境でerrorが発生した為。
+    # ValueError: "Q" is not one of the valid encoding data types: O, N, Q, T, G.
+    ###################################################################
+    # bofore
+    ###################################################################
+    # ope_base4 = (
+    #     oped_base1.transform_joinaggregate(
+    #         ope_value="sum(value):Q", groupby=["mdcname", "mdc6name", "opename"]
+    #     )
+    #     .transform_filter((alt.datum.opename != "0 差分"))
+    #     .transform_window(
+    #         ope_rank="dense_rank(ope_value:Q)",
+    #         sort=[alt.SortField("ope_value", order="descending")],
+    #     )
+    #     .transform_filter(alt.datum.ope_rank < 20)
+    # )
+    #########################################################################
+    # after
+    #########################################################################
     ope_base4 = (
         oped_base1.transform_joinaggregate(
             ope_value="sum(value):Q", groupby=["mdcname", "mdc6name", "opename"]
@@ -432,6 +457,7 @@ def draw_chart(select_hpname, mdc2d, mdc6d, oped):
         )
         .transform_filter(alt.datum.ope_rank < 20)
     )
+    #########################################################################
     ope_bars = ope_base4.encode(
         x=alt.X("sum(value):Q", title=None),
         y=alt.Y("opename", sort="-x", title=None),
