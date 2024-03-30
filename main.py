@@ -19,7 +19,7 @@ alt.data_transformers.enable("custom")
 region_list, mdcname_list, mdc6name_list = myfunc.get_mst()
 
 # sidebar
-st.sidebar.markdown("## 2022年度DPC調査")
+st.sidebar.markdown("## 2022年度DPC退院患者調査")
 st.sidebar.markdown("### ")
 
 # regionのセレクトボックス
@@ -61,7 +61,9 @@ with my_expander:
         )
     )
     st.markdown(
-        "[2.診断群分類（DPC）電子点数表（正式版）（令和5年12月19日更新）]({}) ".format(link2)
+        "[2.診断群分類（DPC）電子点数表（正式版）（令和5年12月19日更新）]({}) ".format(
+            link2
+        )
     )
 
 my_expander = st.expander("Q & A")
