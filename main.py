@@ -43,9 +43,12 @@ mdc2d, mdc6d, oped = myfunc.get_value_data(
     select_hpcd, select_hpname, hp_list, mdcname_list, mdc6name_list
 )
 
-charts = myfunc.draw_chart(select_hpname, mdc2d, mdc6d, oped)
-
-st.altair_chart(charts)
+# mdc2dが0件だった場合、myfunc.draw_chart()は実行せずに、該当の病院はありませんと表示
+if len(mdc2d) == 0:
+    st.write("該当の病院はありません。検索条件を再設定してください。")
+else:
+    charts = myfunc.draw_chart(select_hpname, mdc2d, mdc6d, oped)
+    st.altair_chart(charts)
 
 
 # フッター　###################################################################################
