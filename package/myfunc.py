@@ -17,7 +17,7 @@ alt.data_transformers.enable("custom")
 conn = sqlite3.connect("./data.db")
 
 
-@st.experimental_memo(max_entries=3)
+@st.experimental_memo(max_entries=1)
 def get_mst():
     conn = sqlite3.connect("./data.db")
     region_list = pd.read_sql("SELECT region FROM region", conn)["region"]
@@ -29,25 +29,25 @@ def get_mst():
     return region_list, mdcname_list, mdc6name_list
 
 
-@st.experimental_memo(max_entries=3, ttl=360)
+@st.experimental_memo(max_entries=1, ttl=360)
 def pref(hp, select_prefs):
     hp = hp.loc[hp["pref"].isin(select_prefs)]
     return hp
 
 
-@st.experimental_memo(max_entries=3, ttl=360)
+@st.experimental_memo(max_entries=1, ttl=360)
 def med2(hp, select_med2s):
     hp = hp.loc[hp["med2"].isin(select_med2s)]
     return hp
 
 
-@st.experimental_memo(max_entries=3, ttl=360)
+@st.experimental_memo(max_entries=1, ttl=360)
 def city(hp, select_citys):
     hp = hp.loc[hp["city"].isin(select_citys)]
     return hp
 
 
-@st.experimental_memo(max_entries=3, ttl=360)
+@st.experimental_memo(max_entries=1, ttl=360)
 def get_region_data(select_region):
     conn = sqlite3.connect("./data.db")
     # sqlでregion_idを取得
@@ -130,7 +130,7 @@ def set_location(pref_list, hp_list, hp):
     return select_prefs, select_med2s, select_citys, select_hpname, hp
 
 
-@st.experimental_memo(max_entries=3, ttl=360)
+@st.experimental_memo(max_entries=1, ttl=360)
 def get_select_hpcd(hp, select_hpname, set_min, set_max):
     hp = hp.loc[hp["bed"].between(set_min, set_max)]
     selecthpnames = set(hp["hpname"]).union(select_hpname)
@@ -138,7 +138,7 @@ def get_select_hpcd(hp, select_hpname, set_min, set_max):
     return select_hpcd
 
 
-@st.experimental_memo(max_entries=3, ttl=360)
+@st.experimental_memo(max_entries=1, ttl=360)
 def get_value_data(select_hpcd, select_hpname, hp_list, mdcname_list, mdc6name_list):
     conn = sqlite3.connect("./data.db")
     # mdc2dの取得
@@ -218,7 +218,7 @@ def get_value_data(select_hpcd, select_hpname, hp_list, mdcname_list, mdc6name_l
     return mdc2d, mdc6d, oped
 
 
-@st.experimental_memo(max_entries=3, ttl=360)
+@st.experimental_memo(max_entries=1, ttl=360)
 def draw_chart(select_hpname, mdc2d, mdc6d, oped):
     ##################################################################
     top_hight = 370
